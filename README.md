@@ -23,7 +23,6 @@ Este projeto foi desenvolvido com base nas aulas do curso Geração Tech 2ª edi
 │   ├── app.js
 │   └── server.js
 ├── tests/
-├── uploads/
 ├── .env
 ├── .gitignore
 └── package.json
