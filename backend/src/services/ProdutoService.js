@@ -3,31 +3,22 @@ const OpcaoProduto = require("../models/OpcaoProduto");
 const ImagemProduto = require("../models/ImagemProduto");
 const ProdutoCategoria = require("../models/ProdutoCategoria");
 const Categoria = require("../models/Categoria");
-const fs = require("fs");
-const path = require("path");
 const { Op } = require("sequelize");
-const e = require("express");
 
 const getProdutos = async (req, res) => {
   const { limit = 12, page = 1, fields, match, category_ids, "price-range": priceRange, ...options } = req.query;
 
-  // Converte os parâmetros limit e page para números
   const limitValue = parseInt(limit, 10);
   const pageValue = parseInt(page, 10);
   const offset = (pageValue - 1) * limitValue;
 
-  // Seleciona os campos especificados na query
   const selectedFields = fields ? fields.split(",") : null;
-
-  // Monta a condição de busca
   const whereConditions = {};
 
-  // Filtro por termo de busca (match)
   if (match) {
     whereConditions[Op.or] = [{ name: { [Op.like]: `%${match}%` } }, { description: { [Op.like]: `%${match}%` } }];
   }
 
-  // Filtro por faixa de preço
   if (priceRange) {
     const [minPrice, maxPrice] = priceRange.split("-").map(Number);
     whereConditions.price = { [Op.between]: [minPrice, maxPrice] };
@@ -112,7 +103,7 @@ const getProdutoById = async (req, res) => {
       return res.status(404).json({ error: "Produto não encontrado" });
     }
 
-    const resposta = {
+    const response = {
       id: produto.id,
       enabled: produto.enabled,
       name: produto.name,
@@ -135,24 +126,11 @@ const getProdutoById = async (req, res) => {
         values: o.values.split(","),
       })),
     };
-    res.status(200).json(resposta);
+    res.status(200).json(response);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
-};
-
-//FUNÇÃO PARA SALVAR IMAGEM
-const saveImage = async (base64Data) => {
-  const base64Header = base64Data.split(";")[0];
-  const imageType = base64Header.split("/")[1];
-  const data = base64Data.replace(`data:image/${imageType};base64,`, "");
-
-  const fileName = `${Date.now()}.${imageType}`;
-  const filePath = path.join(__dirname, "../../uploads", fileName);
-  fs.writeFileSync(filePath, data, { encoding: "base64" });
-
-  return fileName;
 };
 
 //CRIAR PRODUTO
@@ -192,10 +170,9 @@ const createProduto = async (req, res) => {
     if (images && images.length > 0) {
       await Promise.all(
         images.map(async (image) => {
-          const imageName = await saveImage(image.content);
           return ImagemProduto.create({
             produto_id: produto.id,
-            path: imageName,
+            path: image.content,
             enabled: true,
           });
         })
@@ -245,14 +222,13 @@ const updateProduto = async (req, res) => {
           if (img.id) {
             const imageProduct = await ImagemProduto.findByPk(img.id);
             if (imageProduct) {
-              imageProduct.path = await saveImage(img.content);
+              imageProduct.path = img.content;
               await imageProduct.save();
             }
           } else {
-            const imageName = await saveImage(img.content);
             await ImagemProduto.create({
               produto_id: id,
-              path: imageName,
+              path: img.content,
               enabled: true,
             });
           }
@@ -310,7 +286,7 @@ const updateProduto = async (req, res) => {
     await produto.save();
     res.status(204).send();
   } catch (error) {
-    res.status(400).json({ error: "Dados de requisição inválidos" });
+    res.status(400).json({ error: error.message });
   }
 };
 

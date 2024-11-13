@@ -8,7 +8,7 @@ require("../models/ProdutoCategoria");
 require("../models/OpcaoProduto");
 
 connection
-  .sync({ force: true })
+  .sync({ alter: true })
   .then(() => {
     console.log("Tabelas sincronizadas com sucesso");
   })
