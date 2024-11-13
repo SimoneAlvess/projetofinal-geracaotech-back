@@ -80,7 +80,6 @@ const getProdutos = async (req, res) => {
     res.status(200).json(response);
   } catch (error) {
     console.error(error);
-   
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 };
